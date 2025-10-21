@@ -12,12 +12,24 @@ export const getEdibles = async () => Edible.find().lean();
 
 export const updateFlavorAvailability = async ({
   productId,
+  flavorId,
   flavorName,
   storeId,
   available,
 }) => {
+  const filter = { _id: productId };
+  const arrayFilter = {};
+
+  if (flavorId) {
+    filter['flavors._id'] = flavorId;
+    arrayFilter['flavor._id'] = flavorId;
+  } else {
+    filter['flavors.name'] = flavorName;
+    arrayFilter['flavor.name'] = flavorName;
+  }
+
   const updatedProduct = await Product.findOneAndUpdate(
-    { _id: productId, 'flavors.name': flavorName },
+    filter,
     {
       $set: {
         [`flavors.$[flavor].available_location.${storeId}.available`]: available,
@@ -25,7 +37,7 @@ export const updateFlavorAvailability = async ({
     },
     {
       new: true,
-      arrayFilters: [{ 'flavor.name': flavorName }],
+      arrayFilters: [arrayFilter],
     }
   ).lean();
 

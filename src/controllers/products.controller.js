@@ -40,36 +40,17 @@ export const getProductsByKindController = async (req, res) => {
 export const updateFlavorAvailabilityController = async (req, res) => {
   try {
     const { productId } = req.params;
-    const { flavorName, storeId, available } = req.body ?? {};
+    const { flavorId, flavorName, storeId, available } = req.body ?? {};
 
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ error: 'productId inválido' });
-    }
-
-    const normalizedFlavorName = (flavorName || '').trim();
-    if (!normalizedFlavorName) {
-      return res.status(400).json({ error: 'flavorName es requerido' });
-    }
-
-    const normalizedStoreId = (storeId || '').trim();
-    if (!normalizedStoreId) {
-      return res.status(400).json({ error: 'storeId es requerido' });
-    }
-
-    if (normalizedStoreId.includes('.') || normalizedStoreId.includes('$')) {
-      return res
-        .status(400)
-        .json({ error: 'storeId no puede contener "." ni "$"' });
-    }
-
-    if (typeof available !== 'boolean') {
-      return res.status(400).json({ error: 'available debe ser booleano' });
-    }
+    const parsedFlavorId = flavorId
+      ? new mongoose.Types.ObjectId(flavorId)
+      : null;
 
     const result = await updateFlavorAvailability({
-      productId,
-      flavorName: normalizedFlavorName,
-      storeId: normalizedStoreId,
+      productId: new mongoose.Types.ObjectId(productId),
+      flavorId: parsedFlavorId,
+      flavorName,
+      storeId,
       available,
     });
 
