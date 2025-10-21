@@ -1,8 +1,10 @@
+import mongoose from 'mongoose';
 import {
   getAllProducts,
   getNicDisposables,
   getHHCDisposables,
   getEdibles,
+  updateFlavorAvailability,
 } from '../services/products.services.js';
 
 export const getProductsByKindController = async (req, res) => {
@@ -32,5 +34,39 @@ export const getProductsByKindController = async (req, res) => {
   } catch (error) {
     console.error('Error en getProductsByKindController:', error);
     res.status(500).json({ error: 'Error al obtener productos' });
+  }
+};
+
+export const updateFlavorAvailabilityController = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { flavorId, flavorName, storeId, available } = req.body ?? {};
+
+    const parsedFlavorId = flavorId
+      ? new mongoose.Types.ObjectId(flavorId)
+      : null;
+
+    const result = await updateFlavorAvailability({
+      productId: new mongoose.Types.ObjectId(productId),
+      flavorId: parsedFlavorId,
+      flavorName,
+      storeId,
+      available,
+    });
+
+    if (!result.ok) {
+      if (result.reason === 'not_found') {
+        return res
+          .status(404)
+          .json({ error: 'Producto o sabor no encontrado' });
+      }
+
+      return res.status(500).json({ error: 'No se pudo actualizar la disponibilidad' });
+    }
+
+    return res.json({ message: 'Disponibilidad actualizada correctamente' });
+  } catch (error) {
+    console.error('Error en updateFlavorAvailabilityController:', error);
+    res.status(500).json({ error: 'Error al actualizar disponibilidad del sabor' });
   }
 };
