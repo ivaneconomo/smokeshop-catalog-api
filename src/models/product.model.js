@@ -18,10 +18,11 @@ const FlavorSchema = new Schema(
     available_location: {
       type: Map,
       of: LocationAvailabilitySchema,
-      default: () => new Map(), // ej: { store_6: { available:true, quantity:0 }, ... }
+      default: () => new Map(),
+      _id: false,
     },
   },
-  { _id: false }
+  { _id: true }
 );
 
 // NUEVO: strains con metadatos por tienda

@@ -6,6 +6,7 @@ import {
   getEdibles,
   updateFlavorAvailability,
 } from '../services/products.services.js';
+import { Product } from '../models/product.model.js';
 
 export const getProductsByKindController = async (req, res) => {
   try {
@@ -37,36 +38,66 @@ export const getProductsByKindController = async (req, res) => {
   }
 };
 
-export const updateFlavorAvailabilityController = async (req, res) => {
+export const updateFlavorAvailabilityController = async (req, res, next) => {
   try {
-    const { productId } = req.params;
-    const { flavorId, flavorName, storeId, available } = req.body ?? {};
+    // 1️⃣ Extraemos params y body
+    const { productId, flavorId } = req.params;
+    const { storeId, available } = req.body;
 
-    const parsedFlavorId = flavorId
-      ? new mongoose.Types.ObjectId(flavorId)
-      : null;
-
-    const result = await updateFlavorAvailability({
-      productId: new mongoose.Types.ObjectId(productId),
-      flavorId: parsedFlavorId,
-      flavorName,
-      storeId,
-      available,
-    });
-
-    if (!result.ok) {
-      if (result.reason === 'not_found') {
-        return res
-          .status(404)
-          .json({ error: 'Producto o sabor no encontrado' });
-      }
-
-      return res.status(500).json({ error: 'No se pudo actualizar la disponibilidad' });
+    // 2️⃣ Validaciones básicas
+    if (
+      !mongoose.isValidObjectId(productId) ||
+      !mongoose.isValidObjectId(flavorId)
+    ) {
+      return res.status(400).json({ message: 'IDs inválidos' });
     }
 
-    return res.json({ message: 'Disponibilidad actualizada correctamente' });
-  } catch (error) {
-    console.error('Error en updateFlavorAvailabilityController:', error);
-    res.status(500).json({ error: 'Error al actualizar disponibilidad del sabor' });
+    if (!['store_6', 'store_22', 'store_28'].includes(storeId)) {
+      return res.status(400).json({ message: 'storeId inválido' });
+    }
+
+    if (typeof available !== 'boolean') {
+      return res
+        .status(400)
+        .json({ message: 'available debe ser true o false' });
+    }
+
+    // 3️⃣ Actualización
+    const updated = await Product.findOneAndUpdate(
+      { _id: productId, 'flavors._id': flavorId },
+      {
+        $set: {
+          [`flavors.$[flavor].available_location.${storeId}.available`]:
+            available,
+        },
+      },
+      {
+        arrayFilters: [{ 'flavor._id': flavorId }],
+        new: true,
+        runValidators: true,
+      }
+    ).lean();
+
+    // 4️⃣ Si no se encuentra el producto o flavor
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ message: 'Producto o flavor no encontrado' });
+    }
+
+    // 5️⃣ Retorno limpio
+    const flavor = updated.flavors.find(
+      (f) => String(f._id) === String(flavorId)
+    );
+    return res.json({
+      success: true,
+      productId,
+      flavorId,
+      storeId,
+      available,
+      flavor,
+    });
+  } catch (err) {
+    next(err);
   }
 };
