@@ -5,6 +5,7 @@ import {
   getHHCDisposables,
   getEdibles,
   updateFlavorAvailability,
+  addFlavorToProductService,
 } from '../services/products.services.js';
 import { Product } from '../models/product.model.js';
 
@@ -99,5 +100,45 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+export const createFlavorController = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { name, color, available_location } = req.body;
+
+    if (!name) {
+      return res
+        .status(400)
+        .json({ message: 'El campo "name" es obligatorio.' });
+    }
+
+    const { product, flavor } = await addFlavorToProductService({
+      productId,
+      name,
+      color,
+      available_location,
+    });
+
+    return res.status(201).json({
+      message: 'Sabor creado correctamente',
+      flavor,
+      product,
+    });
+  } catch (err) {
+    console.error('[createFlavorController] error:', err);
+
+    if (err.code === 'NOT_FOUND') {
+      return res.status(404).json({ message: err.message });
+    }
+    if (err.code === 'DUPLICATED_FLAVOR') {
+      return res.status(409).json({ message: err.message });
+    }
+
+    return res.status(500).json({
+      message: 'Error al crear sabor',
+      error: err.message,
+    });
   }
 };

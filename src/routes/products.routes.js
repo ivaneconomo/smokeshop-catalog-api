@@ -1,8 +1,9 @@
+// src/routes/products.routes.js
 import { Router } from 'express';
-import { body, param } from 'express-validator';
 import {
   getProductsByKindController,
   updateFlavorAvailabilityController,
+  createFlavorController,
 } from '../controllers/products.controller.js';
 
 const router = Router();
@@ -13,5 +14,8 @@ router.patch(
   '/products/:productId/flavors/:flavorId/availability',
   updateFlavorAvailabilityController
 );
+
+// NUEVO: crear sabor
+router.post('/products/:productId/flavors', createFlavorController);
 
 export default router;
