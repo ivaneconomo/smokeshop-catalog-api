@@ -6,7 +6,9 @@ import {
   getEdibles,
   updateFlavorAvailability,
   addFlavorToProductService,
+  createNicProductService,
 } from '../services/products.services.js';
+
 import { Product } from '../models/product.model.js';
 
 export const getProductsByKindController = async (req, res) => {
@@ -139,6 +141,22 @@ export const createFlavorController = async (req, res) => {
     return res.status(500).json({
       message: 'Error al crear sabor',
       error: err.message,
+    });
+  }
+};
+
+export const createNicProductController = async (req, res) => {
+  try {
+    const product = await createNicProductService(req.body);
+
+    res.status(201).json({
+      ok: true,
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: error.message,
     });
   }
 };

@@ -100,3 +100,10 @@ export const addFlavorToProductService = async ({
     flavor: createdFlavor,
   };
 };
+
+// CREA UN VAPE DE NICOTINA
+export const createNicProductService = async (data) => {
+  // NO TOCAMOS kind
+  const product = await NicDisposable.create(data);
+  return product.toObject();
+};
