@@ -12,7 +12,7 @@ const router = Router();
 router.get('/products', getProductsByKindController);
 
 router.patch(
-  '/products/:productId/flavors/:flavnorId/availability',
+  '/products/:productId/flavors/:flavorId/availability',
   updateFlavorAvailabilityController
 );
 
