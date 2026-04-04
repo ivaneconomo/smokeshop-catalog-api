@@ -55,7 +55,7 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
       return res.status(400).json({ message: 'IDs inválidos' });
     }
 
-    if (!['store_6', 'store_22', 'store_28'].includes(storeId)) {
+    if (!['store_6', 'store_8', 'store_22', 'store_28'].includes(storeId)) {
       return res.status(400).json({ message: 'storeId inválido' });
     }
 
@@ -78,7 +78,7 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
         arrayFilters: [{ 'flavor._id': flavorId }],
         new: true,
         runValidators: true,
-      }
+      },
     ).lean();
 
     // 4️⃣ Si no se encuentra el producto o flavor
@@ -90,7 +90,7 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
 
     // 5️⃣ Retorno limpio
     const flavor = updated.flavors.find(
-      (f) => String(f._id) === String(flavorId)
+      (f) => String(f._id) === String(flavorId),
     );
     return res.json({
       success: true,
