@@ -52,8 +52,7 @@ const base = new Schema(
     image: { type: String, required: false, trim: true },
     description: { type: String, default: '', trim: true },
 
-    category: { type: String, required: true, trim: true, index: true }, // texto visible en UI
-    kind: { type: String, required: true, index: true }, // 'NicDisposable' | 'HHCDisposable' | 'Edible'
+    kind: { type: String, required: true, index: true }, // 'Nicotine' | 'Kits' | 'Edibles'
 
     min_price: { type: Number, required: true, min: 0 },
     suggested_price: { type: Number, required: true, min: 0 },
@@ -65,6 +64,18 @@ const base = new Schema(
 
     like_count: { type: Number, default: 0, min: 0 },
     available: { type: Boolean, default: true },
+    sort_order: { type: Number, default: 0, index: true },
+    subcategories: {
+      type: [
+        {
+          name:  { type: String, required: true, trim: true },
+          level: { type: Number, min: 0, max: 5, default: 3 },
+        },
+      ],
+      default: [],
+      _id: false,
+    },
+    catalog_visible: { type: Boolean, default: true },
   },
   { timestamps: true, discriminatorKey: 'kind' }
 );
@@ -83,7 +94,7 @@ base.pre('validate', function (next) {
 
 /** Índices base */
 base.index({ brand: 1, model: 1 });
-base.index({ category: 1, on_featured: 1, on_sale: 1, available: 1 });
+base.index({ kind: 1, on_featured: 1, on_sale: 1, available: 1 });
 // Unicidad por combinación (sirve para upsert limpio)
 base.index({ brand: 1, model: 1, kind: 1 }, { unique: true });
 
@@ -91,45 +102,44 @@ export const Product = models.Product || model('Product', base, 'products');
 
 /** Discriminadores */
 // 1) Vapes Nicotina
-export const NicDisposable = Product.discriminator(
-  'NicDisposable',
+export const Nicotine = Product.discriminator(
+  'Nicotine',
   new Schema({
     puffs: { type: Number, default: 0, min: 0, index: true },
   })
 );
 
 // 2) Dispos HHC
-export const HHCDisposable = Product.discriminator(
-  'HHCDisposable',
+export const Kits = Product.discriminator(
+  'Kits',
   new Schema({
-    grams: { type: Number, min: 0 }, // 1g, 2g
+    grams: { type: Number, min: 0 },
     components: {
       hhc: { type: Boolean, default: false },
       d8: { type: Boolean, default: false },
       d10: { type: Boolean, default: false },
       cbd: { type: Boolean, default: false },
       mushrooms: { type: Boolean, default: false },
+      mushroom_blend: { type: Boolean, default: false },
     },
-    // 🔹 AHORA es un array de subdocs con metadatos por tienda
     strains: { type: [StrainSchema], default: [] },
     live_resin: { type: Boolean, default: false },
     liquid_diamond: { type: Boolean, default: false },
   })
 );
 
-// Validación opcional: evitar strains duplicadas dentro del array
-HHCDisposable.schema.path('strains').validate(function (arr) {
+Kits.schema.path('strains').validate(function (arr) {
   const names = arr.map((s) => s.name);
   return names.length === new Set(names).size;
 }, 'No repitas la misma strain en "strains".');
 
 // 3) Comestibles (HHC / CBD / hongos)
-export const Edible = Product.discriminator(
-  'Edible',
+export const Edibles = Product.discriminator(
+  'Edibles',
   new Schema({
-    weight_g: { type: Number, min: 0 }, // peso total por empaque
-    servings: { type: Number, min: 1 }, // piezas por empaque
-    dosage_mg: { type: Number, min: 0 }, // mg de activo por pieza
+    weight_g: { type: Number, min: 0 },
+    servings: { type: Number, min: 1 },
+    dosage_mg: { type: Number, min: 0 },
     components: {
       hhc: { type: Boolean, default: false },
       d8: { type: Boolean, default: false },
@@ -144,6 +154,7 @@ export const Edible = Product.discriminator(
       cordyceps: { type: Boolean, default: false },
       turkey_tail: { type: Boolean, default: false },
       mad_honey: { type: Boolean, default: false },
+      mushroom_blend: { type: Boolean, default: false },
     },
   })
 );

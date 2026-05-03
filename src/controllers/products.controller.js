@@ -1,42 +1,22 @@
 import mongoose from 'mongoose';
 import {
   getAllProducts,
-  getNicDisposables,
-  getHHCDisposables,
-  getEdibles,
-  updateFlavorAvailability,
   addFlavorToProductService,
+  createProductService,
   createNicProductService,
+  reorderProductsService,
+  getProductByIdService,
+  updateProductService,
 } from '../services/products.services.js';
 
 import { Product } from '../models/product.model.js';
 
-export const getProductsByKindController = async (req, res) => {
+export const getProductsController = async (req, res) => {
   try {
-    const kind = (req.query.kind || '').trim().toLowerCase();
-    let data;
-
-    switch (kind) {
-      case 'nicdisposable':
-      case 'nic':
-        data = await getNicDisposables();
-        break;
-      case 'hhcdisposable':
-      case 'hhc':
-        data = await getHHCDisposables();
-        break;
-      case 'edible':
-      case 'edibles':
-        data = await getEdibles();
-        break;
-      default:
-        data = await getNicDisposables();
-        break;
-    }
-
+    const data = await getAllProducts();
     res.json(data);
   } catch (error) {
-    console.error('Error en getProductsByKindController:', error);
+    console.error('Error en getProductsController:', error);
     res.status(500).json({ error: 'Error al obtener productos' });
   }
 };
@@ -145,6 +125,48 @@ export const createFlavorController = async (req, res) => {
   }
 };
 
+export const reorderProductsController = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0)
+      return res.status(400).json({ ok: false, message: 'ids requerido' });
+    await reorderProductsService(ids);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+};
+
+export const getProductByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: 'ID inválido' });
+
+    const product = await getProductByIdService(id);
+    if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+
+    res.json(product);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
+export const updateProductController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: 'ID inválido' });
+
+    const product = await updateProductService(id, req.body);
+    res.json({ ok: true, product });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ message: e.message });
+    const status = e.name === 'ValidationError' ? 400 : 500;
+    res.status(status).json({ ok: false, message: e.message });
+  }
+};
+
 export const createNicProductController = async (req, res) => {
   try {
     const product = await createNicProductService(req.body);
@@ -157,6 +179,31 @@ export const createNicProductController = async (req, res) => {
     res.status(500).json({
       ok: false,
       message: error.message,
+    });
+  }
+};
+
+export const createProductController = async (req, res) => {
+  try {
+    const product = await createProductService(req.body);
+
+    res.status(201).json({
+      ok: true,
+      product,
+    });
+  } catch (error) {
+    const status =
+      ['INVALID_KIND', 11000].includes(error.code) ||
+      error.name === 'ValidationError'
+        ? 400
+        : 500;
+
+    res.status(status).json({
+      ok: false,
+      message:
+        error.code === 11000
+          ? 'Ya existe un producto con esa marca, modelo y categoría'
+          : error.message,
     });
   }
 };

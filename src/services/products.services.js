@@ -1,14 +1,11 @@
 import {
   Product,
-  NicDisposable,
-  HHCDisposable,
-  Edible,
+  Nicotine,
+  Kits,
+  Edibles,
 } from '../models/product.model.js';
 
 export const getAllProducts = async () => Product.find().lean();
-export const getNicDisposables = async () => NicDisposable.find().lean();
-export const getHHCDisposables = async () => HHCDisposable.find().lean();
-export const getEdibles = async () => Edible.find().lean();
 
 export const updateFlavorAvailability = async ({
   productId,
@@ -101,9 +98,76 @@ export const addFlavorToProductService = async ({
   };
 };
 
-// CREA UN VAPE DE NICOTINA
-export const createNicProductService = async (data) => {
-  // NO TOCAMOS kind
-  const product = await NicDisposable.create(data);
+const productModelsByKind = {
+  Nicotine,
+  Kits,
+  Edibles,
+};
+
+export const createProductService = async (data) => {
+  const kind = data?.kind;
+  const ProductModel = productModelsByKind[kind];
+
+  if (!ProductModel) {
+    const err = new Error('Tipo de producto inválido');
+    err.code = 'INVALID_KIND';
+    throw err;
+  }
+
+  const product = await ProductModel.create(data);
   return product.toObject();
+};
+
+export const createNicProductService = async (data) =>
+  createProductService({ ...data, kind: 'Nicotine' });
+
+export const reorderProductsService = async (ids) => {
+  const ops = ids.map((id, index) => ({
+    updateOne: {
+      filter: { _id: id },
+      update: { $set: { sort_order: index } },
+    },
+  }));
+  return Product.bulkWrite(ops);
+};
+
+const STORES = ['store_6', 'store_8', 'store_22', 'store_28'];
+const defaultAvailability = () =>
+  Object.fromEntries(STORES.map((s) => [s, { available: true, quantity: 0 }]));
+
+export const getProductByIdService = async (id) =>
+  Product.findById(id).lean();
+
+export const updateProductService = async (id, data) => {
+  const { flavors: rawFlavors, strains: rawStrains, ...fields } = data;
+
+  const current = await Product.findById(id);
+  if (!current) {
+    const err = new Error('Producto no encontrado');
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+
+  if (rawFlavors !== undefined) {
+    fields.flavors = rawFlavors.map(({ name, color }) => {
+      const found = current.flavors.find(
+        (f) => f.name.toLowerCase() === name.trim().toLowerCase(),
+      );
+      return found
+        ? found.toObject()
+        : { name: name.trim(), color: color || 'white', available_location: defaultAvailability() };
+    });
+  }
+
+  if (rawStrains !== undefined) {
+    fields.strains = rawStrains.map(({ name }) => {
+      const found = (current.strains ?? []).find((s) => s.name === name);
+      return found ? found.toObject() : { name, available_location: defaultAvailability() };
+    });
+  }
+
+  // Raw update para permitir cambiar el discriminator key (kind)
+  await Product.collection.updateOne({ _id: current._id }, { $set: fields });
+
+  return Product.findById(id).lean();
 };

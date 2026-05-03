@@ -1,25 +1,31 @@
 // src/routes/products.routes.js
 import { Router } from 'express';
 import {
-  getProductsByKindController,
+  getProductsController,
+  getProductByIdController,
   updateFlavorAvailabilityController,
   createFlavorController,
-  createNicProductController, // 👈 NUEVO
+  createNicProductController,
+  createProductController,
+  reorderProductsController,
+  updateProductController,
 } from '../controllers/products.controller.js';
 
 const router = Router();
 
-router.get('/products', getProductsByKindController);
+router.get('/products', getProductsController);
+router.post('/products', createProductController);
+router.patch('/products/reorder', reorderProductsController);
 
 router.patch(
   '/products/:productId/flavors/:flavorId/availability',
-  updateFlavorAvailabilityController
+  updateFlavorAvailabilityController,
 );
 
-// NUEVO: crear sabor
 router.post('/products/:productId/flavors', createFlavorController);
-
-// NUEVO: crear vape de nicotina
 router.post('/products/nic', createNicProductController);
+
+router.get('/products/:id', getProductByIdController);
+router.patch('/products/:id', updateProductController);
 
 export default router;

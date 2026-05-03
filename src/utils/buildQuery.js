@@ -1,7 +1,7 @@
 export function buildProductFilters(q) {
   const filter = {};
 
-  if (q.category) filter.category = q.category;
+  if (q.kind) filter.kind = q.kind;
   if (q.brand) filter.brand = new RegExp(`^${q.brand}$`, 'i');
 
   if (q.available !== undefined) {
