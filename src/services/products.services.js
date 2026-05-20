@@ -155,10 +155,12 @@ export const updateProductService = async (id, data) => {
       );
       if (found) {
         const obj = found.toObject();
+        if (!obj._id) obj._id = new mongoose.Types.ObjectId();
         obj.strain = strain || '';
         return obj;
       }
       return {
+        _id: new mongoose.Types.ObjectId(),
         name: name.trim(),
         color: color || 'slate',
         strain: strain || '',
