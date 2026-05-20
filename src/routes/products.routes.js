@@ -15,6 +15,7 @@ const router = Router();
 
 router.get('/products', getProductsController);
 router.post('/products', createProductController);
+// /reorder antes de /:id para que Express no interprete "reorder" como un id
 router.patch('/products/reorder', reorderProductsController);
 
 router.patch(
@@ -23,6 +24,7 @@ router.patch(
 );
 
 router.post('/products/:productId/flavors', createFlavorController);
+// Ruta específica de nicotina (legacy o creación guiada)
 router.post('/products/nic', createNicProductController);
 
 router.get('/products/:id', getProductByIdController);

@@ -2,7 +2,10 @@
 import mongoose from 'mongoose';
 const { Schema, model, models } = mongoose;
 
-/** Subdocumentos */
+/**
+ * Subdocumentos
+ * _id: false en todos para evitar IDs innecesarios en arrays embebidos
+ */
 const LocationAvailabilitySchema = new Schema(
   {
     available: { type: Boolean, default: true },
@@ -15,6 +18,7 @@ const FlavorSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     color: { type: String, default: 'white', trim: true },
+    strain: { type: String, default: '', trim: true },
     available_location: {
       type: Map,
       of: LocationAvailabilitySchema,
@@ -52,7 +56,7 @@ const base = new Schema(
     image: { type: String, required: false, trim: true },
     description: { type: String, default: '', trim: true },
 
-    kind: { type: String, required: true, index: true }, // 'Nicotine' | 'Kits' | 'Edibles'
+    kind: { type: String, required: true, index: true }, // también actúa como discriminatorKey
 
     min_price: { type: Number, required: true, min: 0 },
     suggested_price: { type: Number, required: true, min: 0 },
@@ -75,6 +79,7 @@ const base = new Schema(
       default: [],
       _id: false,
     },
+    // Permite ocultar el producto del catálogo sin eliminarlo
     catalog_visible: { type: Boolean, default: true },
   },
   { timestamps: true, discriminatorKey: 'kind' }
@@ -95,7 +100,7 @@ base.pre('validate', function (next) {
 /** Índices base */
 base.index({ brand: 1, model: 1 });
 base.index({ kind: 1, on_featured: 1, on_sale: 1, available: 1 });
-// Unicidad por combinación (sirve para upsert limpio)
+// Unicidad por combinación: garantiza que un upsert por {brand, model, kind} sea seguro
 base.index({ brand: 1, model: 1, kind: 1 }, { unique: true });
 
 export const Product = models.Product || model('Product', base, 'products');

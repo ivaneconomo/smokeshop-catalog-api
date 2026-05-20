@@ -49,7 +49,7 @@ export const updateFlavorAvailability = async ({
 export const addFlavorToProductService = async ({
   productId,
   name,
-  color = 'white',
+  color = 'slate',
   available_location,
 }) => {
   if (!productId || !name) {
@@ -78,7 +78,7 @@ export const addFlavorToProductService = async ({
 
   const newFlavor = {
     name: normalizedName,
-    color: color?.trim() || 'white',
+    color: color?.trim() || 'slate',
   };
 
   // available_location es un Map en el schema, pero podés pasar un objeto plano
@@ -149,13 +149,21 @@ export const updateProductService = async (id, data) => {
   }
 
   if (rawFlavors !== undefined) {
-    fields.flavors = rawFlavors.map(({ name, color }) => {
+    fields.flavors = rawFlavors.map(({ name, color, strain }) => {
       const found = current.flavors.find(
         (f) => f.name.toLowerCase() === name.trim().toLowerCase(),
       );
-      return found
-        ? found.toObject()
-        : { name: name.trim(), color: color || 'white', available_location: defaultAvailability() };
+      if (found) {
+        const obj = found.toObject();
+        obj.strain = strain || '';
+        return obj;
+      }
+      return {
+        name: name.trim(),
+        color: color || 'slate',
+        strain: strain || '',
+        available_location: defaultAvailability(),
+      };
     });
   }
 

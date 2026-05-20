@@ -35,7 +35,7 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
       return res.status(400).json({ message: 'IDs inválidos' });
     }
 
-    if (!['store_6', 'store_8', 'store_22', 'store_28'].includes(storeId)) {
+    if (!storeId || typeof storeId !== 'string') {
       return res.status(400).json({ message: 'storeId inválido' });
     }
 
@@ -45,7 +45,8 @@ export const updateFlavorAvailabilityController = async (req, res, next) => {
         .json({ message: 'available debe ser true o false' });
     }
 
-    // 3️⃣ Actualización
+    // 3️⃣ Actualización con arrayFilters para editar el subdocumento correcto sin traer todo el array
+    // .lean() devuelve un POJO plano, más rápido y suficiente para serializar la respuesta
     const updated = await Product.findOneAndUpdate(
       { _id: productId, 'flavors._id': flavorId },
       {
@@ -192,6 +193,7 @@ export const createProductController = async (req, res) => {
       product,
     });
   } catch (error) {
+    // 11000 = duplicate key de MongoDB (índice único brand+model+kind)
     const status =
       ['INVALID_KIND', 11000].includes(error.code) ||
       error.name === 'ValidationError'
