@@ -5,8 +5,10 @@ import {
   Kits,
   Edibles,
 } from '../models/product.model.js';
+import { deleteCloudinaryImage } from '../utils/cloudinary.js';
 
-export const getAllProducts = async () => Product.find().lean();
+export const getAllProducts = async ({ archived = false } = {}) =>
+  Product.find(archived ? { archived: true } : { archived: { $ne: true } }).lean();
 
 export const updateFlavorAvailability = async ({
   productId,
@@ -180,5 +182,34 @@ export const updateProductService = async (id, data) => {
   // Raw update para permitir cambiar el discriminator key (kind)
   await Product.collection.updateOne({ _id: current._id }, { $set: fields });
 
+  // Borrar imagen anterior de Cloudinary si fue reemplazada o borrada
+  if ('image' in fields && fields.image !== current.image && current.image) {
+    await deleteCloudinaryImage(current.image);
+  }
+
   return Product.findById(id).lean();
+};
+
+export const archiveProductService = async (id) => {
+  const product = await Product.findById(id);
+  if (!product) {
+    const err = new Error('Producto no encontrado');
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+  product.archived = !product.archived;
+  await product.save();
+  return { archived: product.archived };
+};
+
+export const deleteProductService = async (id) => {
+  const product = await Product.findById(id);
+  if (!product) {
+    const err = new Error('Producto no encontrado');
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+  const imageUrl = product.image;
+  await Product.deleteOne({ _id: product._id });
+  if (imageUrl) await deleteCloudinaryImage(imageUrl);
 };

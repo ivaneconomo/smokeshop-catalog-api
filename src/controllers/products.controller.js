@@ -7,13 +7,16 @@ import {
   reorderProductsService,
   getProductByIdService,
   updateProductService,
+  archiveProductService,
+  deleteProductService,
 } from '../services/products.services.js';
 
 import { Product } from '../models/product.model.js';
 
 export const getProductsController = async (req, res) => {
   try {
-    const data = await getAllProducts();
+    const archived = req.query.archived === 'true';
+    const data = await getAllProducts({ archived });
     res.json(data);
   } catch (error) {
     console.error('Error en getProductsController:', error);
@@ -165,6 +168,32 @@ export const updateProductController = async (req, res) => {
     if (e.code === 'NOT_FOUND') return res.status(404).json({ message: e.message });
     const status = e.name === 'ValidationError' ? 400 : 500;
     res.status(status).json({ ok: false, message: e.message });
+  }
+};
+
+export const archiveProductController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: 'ID inválido' });
+    const result = await archiveProductService(id);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ message: e.message });
+    res.status(500).json({ ok: false, message: e.message });
+  }
+};
+
+export const deleteProductController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: 'ID inválido' });
+    await deleteProductService(id);
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ message: e.message });
+    res.status(500).json({ ok: false, message: e.message });
   }
 };
 

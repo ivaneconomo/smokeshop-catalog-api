@@ -81,6 +81,7 @@ const base = new Schema(
     },
     // Permite ocultar el producto del catálogo sin eliminarlo
     catalog_visible: { type: Boolean, default: true },
+    archived: { type: Boolean, default: false, index: true },
   },
   { timestamps: true, discriminatorKey: 'kind' }
 );

@@ -9,6 +9,8 @@ import {
   createProductController,
   reorderProductsController,
   updateProductController,
+  archiveProductController,
+  deleteProductController,
 } from '../controllers/products.controller.js';
 
 const router = Router();
@@ -29,5 +31,7 @@ router.post('/products/nic', createNicProductController);
 
 router.get('/products/:id', getProductByIdController);
 router.patch('/products/:id', updateProductController);
+router.patch('/products/:id/archive', archiveProductController);
+router.delete('/products/:id', deleteProductController);
 
 export default router;
